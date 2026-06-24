@@ -86,7 +86,7 @@ export default function App() {
     document.head.appendChild(link);
 
     // Grab coins from Spring Boot
-    fetch('http://localhost:8080/api/coins')
+    fetch('https://pax-gacha-backend.onrender.com/api/coins')
       .then(res => res.json())
       .then(data => setTabiCoins(data))
       .catch(err => console.error("Backend not running or connected yet:", err));
@@ -97,7 +97,7 @@ export default function App() {
   // SAVE DATA TO BACKEND
   const updateBackendCoins = (newAmount) => {
     setTabiCoins(newAmount); // Update UI instantly
-    fetch(`http://localhost:8080/api/coins/update?newBalance=${newAmount}`, {
+    fetch(`https://pax-gacha-backend.onrender.com/api/coins/update?newBalance=${newAmount}`, {
       method: 'POST'
     }).catch(err => console.error("Failed to save to backend:", err));
   };
