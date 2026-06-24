@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Majestic Impact</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background-color: #0a0a1a;
+            color: white;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            touch-action: manipulation;
+        }
+        h1, h2, h3, .orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .gacha-bg {
+            background: radial-gradient(circle at top center, #1a1a3a 0%, #050510 100%);
+            min-height: 100vh;
+            width: 100vw;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* star animation */
+        .star-shape {
+            clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+        }
+
+        @keyframes dropIn {
+            0% { transform: translateY(-300px) scale(0); opacity: 0; }
+            50% { transform: translateY(0px) scale(1.5); opacity: 1; }
+            100% { transform: translateY(0px) scale(1); opacity: 1; }
+        }
+        
+        .animate-drop-in {
+            animation: dropIn 1s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        }
+
+        @keyframes flashWhite {
+            0% { opacity: 0; }
+            10% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+        
+        .animate-flash {
+            animation: flashWhite 0.8s ease-out forwards;
+        }
+
+        .card-show {
+            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* rarity colors */
+        .theme-3 { --rarity-color: #3b82f6; --rarity-glow: rgba(59, 130, 246, 0.5); } /* Blue */
+        .theme-4 { --rarity-color: #a855f7; --rarity-glow: rgba(168, 85, 247, 0.5); } /* Purple */
+        .theme-5 { --rarity-color: #fbbf24; --rarity-glow: rgba(251, 191, 36, 0.5); } /* Gold */
+
+        .rarity-card {
+            box-shadow: 0 0 30px var(--rarity-glow);
+            border: 2px solid var(--rarity-color);
+        }
+        
+        .rarity-text {
+            color: var(--rarity-color);
+        }
+
+        .floating {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px) scale(1); }
+            50% { transform: translateY(-10px) scale(1.02); }
+            100% { transform: translateY(0px) scale(1); }
+        }
+        
+        /* scrollbar for results */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // data stuff
+        const QUEST_POOL = {
+            3: [
+                { title: "Chopstick Dosa", desc: "Eat a Masala Dosa using only chopsticks." },
+                { title: "Subway Surfer", desc: "Get stuck in traffic and film a split-screen 'Subway Surfers' vlog." },
+                { title: "Anime Directions", desc: "Ask a local for directions using only intense anime hand gestures." },
+                { title: "Darshini Review", desc: "Try Filter Coffee at a random Darshini and review it like a food critic." },
+                { title: "NPC Idle", desc: "Stand in a random queue doing a video game 'idle animation'." },
+                { title: "Commercial St Loot", desc: "Buy the weirdest item from a street vendor for under ₹100." },
+                { title: "IT Park Choreo", desc: "Do a 15-second K-pop/anime dance outside a major tech park." },
+                { title: "Jeera Masala Shock", desc: "Film the raw reaction to drinking local Jeera soda for the first time." },
+                { title: "Dubbed Doggo", desc: "Find a street dog and dub a dramatic anime monologue over it." },
+                { title: "Freeze Challenge", desc: "Do the 'English or Spanish' freeze challenge in a busy market." },
+                { title: "Random NPC Photo", desc: "Take a dramatic photo with a local who has no idea who you are." },
+                { title: "Google Translate", desc: "Order street food using only the Google Translate TTS voice." },
+                { title: "Namma Metro", desc: "Ride the metro during non-peak hours and review the aesthetic." },
+                { title: "Spice Tolerance", desc: "Try the spiciest local snack you can find without drinking water." },
+                { title: "Mewing Streak", desc: "Refuse to answer a question, just point to your jawline." }
+            ],
+            4: [
+                { title: "The Ultimate Quest", desc: "Successfully convince an Auto driver to use the meter." },
+                { title: "Cubbon Cosplay", desc: "Walk through Cubbon Park in cosplay and ask people to guess the character." },
+                { title: "Gamer Challenge", desc: "Visit a local gaming cafe and challenge a kid to Tekken/Valorant." },
+                { title: "Domain Expansion", desc: "Hit a dramatic Domain Expansion pose while eating Meghana Foods Biryani." },
+                { title: "Church St Catwalk", desc: "Do a fierce, high-fashion catwalk down Church Street in full cosplay." },
+                { title: "Startup Pitch", desc: "Find a tech bro in Koramangala and ask them to pitch their startup to you." },
+                { title: "Crash the Party", desc: "Walk into a random public gathering and pretend to be the chief guest." },
+                { title: "Bollywood Attempt", desc: "Recreate a famous Bollywood dance step in front of Vidhana Soudha." },
+                { title: "Akira Slide", desc: "Rent a Yulu bike and try to recreate the iconic 'Akira motorcycle slide' pose." },
+                { title: "Time Traveler", desc: "Go to UB City mall and act like a confused time-traveler from an anime." }
+            ],
+            5: [
+                { title: "Pimp My Auto", desc: "Decorate a willing driver's auto with anime stickers and tip him generously." },
+                { title: "Flash Mob", desc: "Teach 5 random strangers a viral TikTok dance and film it." },
+                { title: "Rameshwaram Trial", desc: "Eat a whole plate of Rameshwaram Cafe Ghee Podi Idli without flinching." },
+                { title: "Law & Order Anime", desc: "Get a local traffic cop to do a peace sign or anime pose for a photo." },
+                { title: "Sponsor Drop!", desc: "Give away a VIP PAX ticket or premium merch to the first fan who recognizes you." }
+            ]
+        };
+
+        const App = () => {
+            const [tabiCoins, setTabiCoins] = useState(1600); // onli admin can change
+            const [passcodeInput, setPasscodeInput] = useState('');
+            const [isAdminMode, setIsAdminMode] = useState(false);
+            const [showAdminPanel, setShowAdminPanel] = useState(false);
+            
+            //UI stuff
+            const [pulling, setPulling] = useState(false);
+            const [animatingRarity, setAnimatingRarity] = useState(null);
+            const [flash, setFlash] = useState(false);
+            const [results, setResults] = useState([]);
+            
+            const costPerPull = 50;
+
+            useEffect(() => {
+                lucide.createIcons();
+            }, []);
+
+            const getRarity = () => {
+                const rand = Math.random() * 100;
+                if (rand < 5) return 5;       //5% chance for 5 star
+                if (rand < 30) return 4;      //25% chance for 4 star
+                return 3;                     //70% chance for 3 star
+            };
+
+            const handlePull = (amount) => {
+                const totalCost = amount * costPerPull;
+                if (tabiCoins < totalCost) {
+                    alert("Not enough Tabi Coins! Need more comments!");
+                    return;
+                }
+
+                setTabiCoins(prev => prev - totalCost);
+                setPulling(true);
+                setResults([]); //clear previous
+
+                let highestRarity = 3;
+                let pullResults = [];
+
+                //determine results
+                for(let i = 0; i < amount; i++) {
+                    let r = getRarity();
+                    //pity/guarantee rule: 10 pull guarantees at least one 4 star
+                    if (amount === 10 && i === 9 && highestRarity === 3) r = 4;
+                    
+                    if (r > highestRarity) highestRarity = r;
+                    
+                    const pool = QUEST_POOL[r];
+                    const item = pool[Math.floor(Math.random() * pool.length)];
+                    pullResults.push({ ...item, rarity: r, id: Date.now() + i });
+                }
+
+                //animation
+                setAnimatingRarity(highestRarity);
+                
+                setTimeout(() => {
+                    setFlash(true);
+                    setTimeout(() => {
+                        setResults(pullResults);
+                        setFlash(false);
+                        setAnimatingRarity(null);
+                        setPulling(false);
+                    }, 400); //short flash delay
+                }, 1000); //star fall duration
+            };
+
+            const handleAdminLogin = (e) => {
+                e.preventDefault();
+                if (passcodeInput === 'PAX2026') {
+                    setIsAdminMode(true);
+                    setShowAdminPanel(false);
+                    setPasscodeInput('');
+                } else {
+                    alert("Incorrect Passcode");
+                }
+            };
+
+            const addCoins = (amount) => {
+                setTabiCoins(prev => prev + amount);
+            };
+
+            return (
+                <div className="gacha-bg">
+                    {/* top bar */}
+                    <div className="absolute top-4 left-4 right-4 flex justify-between items-center z-10">
+                        <div 
+                            className="w-10 h-10 rounded-full bg-black/50 border border-gray-600 flex items-center justify-center cursor-pointer hover:bg-gray-800"
+                            onClick={() => setShowAdminPanel(!showAdminPanel)}
+                        >
+                            <i data-lucide="settings" className="w-5 h-5 text-gray-400"></i>
+                        </div>
+                        <div className="bg-gray-900/80 px-4 py-2 rounded-full border border-gray-700 flex items-center gap-3 shadow-lg">
+                            <span className="text-sm font-bold text-gray-400">TABI COINS</span>
+                            <div className="flex items-center gap-1">
+                                <i data-lucide="coins" className="w-4 h-4 text-yellow-400"></i>
+                                <span className="font-black text-xl text-yellow-400 orbitron">{tabiCoins}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* admin stuff */}
+                    {showAdminPanel && (
+                        <div className="absolute top-16 left-4 bg-gray-900 border border-gray-700 p-4 rounded-xl shadow-2xl z-20 w-64">
+                            {!isAdminMode ? (
+                                <form onSubmit={handleAdminLogin} className="flex flex-col gap-3">
+                                    <label className="text-xs text-gray-400 uppercase tracking-wider">Enter Passcode</label>
+                                    <input 
+                                        type="password" 
+                                        value={passcodeInput}
+                                        onChange={(e) => setPasscodeInput(e.target.value)}
+                                        className="bg-black border border-gray-700 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                                    />
+                                    <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded transition">Login</button>
+                                </form>
+                            ) : (
+                                <div className="flex flex-col gap-3">
+                                    <div className="text-xs text-green-400 font-bold mb-2">ADMIN MODE ACTIVE</div>
+                                    <button onClick={() => addCoins(50)} className="bg-gray-800 hover:bg-gray-700 border border-gray-600 py-2 rounded text-sm">+50 Coins (1 Pull)</button>
+                                    <button onClick={() => addCoins(500)} className="bg-gray-800 hover:bg-gray-700 border border-gray-600 py-2 rounded text-sm">+500 Coins (10 Pulls)</button>
+                                    <button onClick={() => setIsAdminMode(false)} className="mt-2 text-xs text-red-400 hover:text-red-300">Logout</button>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* main banner area */}
+                    {!pulling && results.length === 0 && (
+                        <div className="flex-1 w-full flex flex-col items-center justify-center p-6 relative">
+                            
+                            {/* decorative elements */}
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[150%] h-[150%] bg-blue-900/10 rounded-full blur-[100px] pointer-events-none"></div>
+
+                            <div className="text-center z-10">
+                                <h1 className="text-5xl md:text-7xl font-black orbitron mb-2 tracking-widest text-transparent bg-clip-text bg-gradient-to-b from-white to-gray-400 drop-shadow-lg">
+                                    MAJESTIC<br/>IMPACT
+                                </h1>
+                                <p className="text-blue-300 text-lg md:text-xl font-bold tracking-widest uppercase bg-blue-900/30 px-6 py-2 rounded-full inline-block border border-blue-500/30 backdrop-blur-sm">
+                                    Bengaluru's First Gacha Quest
+                                </p>
+                            </div>
+
+                            {/* pull buttons area */}
+                            <div className="absolute bottom-12 w-full px-6 flex justify-center gap-4 max-w-2xl">
+                                <button 
+                                    onClick={() => handlePull(1)}
+                                    className="flex-1 bg-gray-800 border-2 border-gray-600 rounded-xl py-4 font-bold text-xl uppercase transition hover:bg-gray-700 active:scale-95 flex flex-col items-center"
+                                >
+                                    <div className="flex items-center gap-1 text-gray-400 text-sm mb-1">
+                                        Cost: 50 <i data-lucide="coins" className="w-3 h-3"></i>
+                                    </div>
+                                    1x Pull
+                                </button>
+                                <button 
+                                    onClick={() => handlePull(10)}
+                                    className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 border-2 border-purple-400 rounded-xl py-4 font-bold text-xl uppercase text-white shadow-[0_0_20px_rgba(168,85,247,0.4)] transition hover:brightness-110 active:scale-95 flex flex-col items-center"
+                                >
+                                    <div className="flex items-center gap-1 text-purple-200 text-sm mb-1">
+                                        Cost: 500 <i data-lucide="coins" className="w-3 h-3"></i>
+                                    </div>
+                                    10x Pull
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {}
+                    {/* pull animation - overlay */}
+                    {pulling && animatingRarity && (
+                        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black">
+                            <div 
+                                className={`theme-${animatingRarity} w-20 h-20 bg-[var(--rarity-color)] star-shape animate-drop-in shadow-[0_0_100px_var(--rarity-glow)]`}
+                            ></div>
+                        </div>
+                    )}
+
+                    {/* flash effect */}
+                    {flash && <div className="absolute inset-0 bg-white z-50 animate-flash pointer-events-none"></div>}
+
+                    {/* results */}
+                    {!pulling && results.length > 0 && (
+                        <div className="absolute inset-0 z-40 bg-black/90 backdrop-blur-md flex flex-col p-6">
+                            
+                            <h2 className="text-center orbitron text-2xl mb-6 mt-4 text-gray-300 tracking-widest">QUESTS ACQUIRED</h2>
+                            
+                            {/* scrollable results */}
+                            <div className="flex-1 overflow-y-auto flex flex-wrap justify-center gap-4 content-start pb-24">
+                                {results.map((result, idx) => (
+                                    <div 
+                                        key={result.id} 
+                                        className={`theme-${result.rarity} rarity-card card-show bg-gray-900 rounded-xl p-4 w-full md:w-[calc(50%-1rem)] max-w-sm flex flex-col relative overflow-hidden ${result.rarity === 5 ? 'floating' : ''}`}
+                                        style={{ animationDelay: `${idx * 0.1}s` }}
+                                    >
+                                        <div className="absolute top-0 right-0 bg-[var(--rarity-color)] text-black font-black px-3 py-1 text-sm rounded-bl-lg">
+                                            {result.rarity}★
+                                        </div>
+                                        
+                                        <h3 className="orbitron rarity-text text-xl font-bold mb-2 pr-8 leading-tight">
+                                            {result.title}
+                                        </h3>
+                                        <p className="text-gray-400 text-sm leading-relaxed mb-4 flex-1">
+                                            {result.desc}
+                                        </p>
+                                        
+                                        <div className="text-xs uppercase tracking-widest rarity-text font-bold opacity-70">
+                                            {result.rarity === 5 ? "SSR Legendary" : result.rarity === 4 ? "SR Epic" : "R Common"}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* sticky bottom button */}
+                            <div className="absolute bottom-0 left-0 w-full p-6 bg-gradient-to-t from-black via-black to-transparent flex justify-center">
+                                <button 
+                                    onClick={() => setResults([])}
+                                    className="bg-white text-black font-bold uppercase px-12 py-4 rounded-full hover:bg-gray-200 transition active:scale-95 w-full max-w-md"
+                                >
+                                    Confirm
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
