@@ -66,7 +66,7 @@ const HangingStar = ({ left, right, delay, length, size, color, hiddenMobile }) 
 );
 
 export default function App() {
-  const [tabiCoins, setTabiCoins] = useState(1600); // Default fallback
+  const [tabiCoins, setTabiCoins] = useState("⏳"); // Default fallback
   const [passcodeInput, setPasscodeInput] = useState('');
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
@@ -111,6 +111,8 @@ export default function App() {
   };
 
   const handlePull = () => {
+    const handlePull = () => {
+    if (tabiCoins === "⏳") return;
     if (tabiCoins < costPerPull) {
       // Trigger the red text warning instead of an alert
       setShowWarning(true);
